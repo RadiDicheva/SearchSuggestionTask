@@ -10,24 +10,22 @@ import com.sun.jersey.api.client.WebResource;
 
 public class RestClient {
 
-	private String getResponseBody(String url, String param) {
-		Client client = Client.create();
-
-		WebResource webResource = client.resource(url + param);
-
-		ClientResponse response = webResource.accept("application/json").get(ClientResponse.class);
-
-		return response.getEntity(String.class);
+	public List<String> getSearchTermList(String url, String searchTerm) {
+		String responseBody = getResponseBody(url, searchTerm);
+		Object document = Configuration.defaultConfiguration().jsonProvider().parse(responseBody);
+		List<String> searchTermList = JsonPath.read(document, "$..searchterm");
+		return searchTermList;
 	}
 
-	public List<String> getSearchTermList(String url, String searchTerm) {
+	private String getResponseBody(String url, String param) {
+		Client client = Client.create();
+		WebResource webResource = client.resource(String.format(url, param));
+		ClientResponse response = webResource.accept("application/json").get(ClientResponse.class);
 
-		String responseBody = getResponseBody(url, searchTerm);
+		if (response.getStatus() != ClientResponse.Status.OK.getStatusCode()) {
+			throw new IllegalStateException(String.format("The response status is: [%s]", response.getStatus()));
+		}
 
-		Object document = Configuration.defaultConfiguration().jsonProvider().parse(responseBody);
-
-		List<String> searchTermList = JsonPath.read(document, "$..searchterm");
-
-		return searchTermList;
+		return response.getEntity(String.class);
 	}
 }
